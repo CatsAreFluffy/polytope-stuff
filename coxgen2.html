@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Coxeter group presentation generator</title>
+</head>
+<body>
+<textarea id="box"></textarea>
+<input id="a"><input id="b"><button onclick="better(+b.value,a.value)">Go</button>
+	<script type="text/javascript">
+		function run(dim,edges){
+			var out=""
+			for(var i=0;i<dim;i++){
+				out+=""+i+i+" \n"
+			}
+			//421
+			//edges={"01":3,"12":3,"23":3,"37":3,"45":3,"57":3,"67":3}
+			for(var i=0;i<dim;i++){
+				for(var j=i+1;j<dim;j++){
+					if(!edges[i+""+j]){
+						edges[i+""+j]=2
+					}
+				}
+			}
+			for(var j=0;j<dim;j++){
+				for(var k=j+1;k<dim;k++){
+					var i=""+j+k
+					out+=i.repeat(edges[i])+" \n"
+				}
+			}
+			out=out.slice(0,-1)
+			box.value=out
+		}
+		function genedges(dim,fam){
+			if(dim<2){
+				return {}
+			}
+			if(fam=="A"){
+				var ret=genedges(dim-1,"A")
+				ret[""+(dim-2)+(dim-1)]=3
+				return ret
+			}
+			if(fam=="BC"){
+				var ret=genedges(dim-1,"A")
+				ret[""+(dim-2)+(dim-1)]=4
+				return ret
+			}
+			if(fam=="H"){
+				var ret=genedges(dim-1,"A")
+				ret[""+(dim-2)+(dim-1)]=5
+				return ret
+			}
+			if(fam=="G"){
+				var ret=genedges(dim-1,"A")
+				ret[""+(dim-2)+(dim-1)]=6
+				return ret
+			}
+			if(fam=="I"){
+				var ret=genedges(dim-1,"A")
+				ret["01"]=dim
+				return ret
+			}
+			if(fam=="D"){
+				var ret=genedges(dim-1,"A")
+				ret[""+(dim-3)+(dim-1)]=3
+				return ret
+			}
+			if(fam=="E"){
+				var ret=genedges(dim-1,"A")
+				ret[""+(dim-4)+(dim-1)]=3
+				return ret
+			}
+		}
+		function better(dim,fam){
+			run(dim,genedges(dim,fam))
+		}
+	</script>
+</body>
+</html>

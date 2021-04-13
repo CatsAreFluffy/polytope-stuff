@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Knuth-Bendix algorithm</title>
+	<script type="text/javascript">
+		//var rels=[[":!",""],["a^",""],["~~",""],["()!",""],["()^",""],["()*",""],["()~*",""],["j*j*","j*"],["~a~*^","^"],[":~",":"]]
+		var rels=[["aa",""],["ba","ab"],["bb",""],["ca","bc"],["cb","abc"],["ccc",""],["da","ad"],["db","abd"],["dc","ccd"],["dd",""]]
+		var danger=0
+		function strlt(a,b){
+			if(danger){
+				return a<b
+			}
+			//return a<b //Apparently this actually works. Who knew //No it doesn't lol
+			if(a.length>b.length){
+				return false
+			}
+			if(a.length<b.length){
+				return true
+			}
+			for(var i=0;i<a.length&&i<b.length;i++){
+				if(a[i]>b[i]){
+					return false
+				}
+				if(a[i]<b[i]){
+					return true
+				}
+			}
+			return true
+		}
+		function etaid(ri,rj){
+			return [ri,rj]
+		}
+		function etagroup(ri,rj){
+			while(ri[0]==rj[0]){
+				ri=ri.slice(1)
+				rj=rj.slice(1)
+			}
+			while(ri[ri.length-1]==rj[rj.length-1]){
+				ri=ri.slice(0,-1)
+				rj=rj.slice(0,-1)
+			}
+			return [ri,rj]
+		}
+		function etaunderload(ri,rj){
+			if(ri[0]==rj[0]&&"AB".includes(ri[0])){
+				if(ri.split(ri[0]).length==2&&rj.split(rj[0]).length==2){
+					console.log("eta!")
+					return [ri.slice(1),rj.slice(1)]
+				}
+			}
+			return [ri,rj]
+		}
+		var eta=etaid
+		function blammo(rels){
+			reds=[]
+			c={}
+			for(var i=0;i<rels.length;i++){
+				if(strlt(rels[i][0],rels[i][1])){
+					reds.push([rels[i][1],rels[i][0]])
+				}else{
+					reds.push(rels[i])
+				}
+			}
+			function rewrite1(str,excl,limit){
+				if(!excl){
+					excl=[]
+				}
+				if(limit===undefined){
+					limit=reds.length
+				}
+				for(var i=0;i<limit;i++){
+					if(excl.includes(i)){
+						continue
+					}
+					if(str.includes(reds[i][0])){
+						return str.replace(reds[i][0],reds[i][1])
+						c=1
+					}
+				}
+				return str
+			}
+			window.rewrite1=rewrite1
+			function rewrite(str,excl,limit){
+				fstr=str
+				//delete c[fstr]
+				//if(!c[fstr]){
+					if(!excl){
+						excl=[]
+					}
+					while(1){
+						ostr=str
+						str=rewrite1(str,excl,limit)
+						if(str==ostr){
+							//c[fstr]=str
+							return str
+							break
+						}
+					}
+				//}
+				//return c[fstr]
+			}
+			window.rewrite=rewrite
+			window.speedhack=1
+			window.maxmaxlen=100
+			window.maxlen=2
+			window.giveup=0
+			function step(prio){
+				var merge
+				var ci
+				var cj
+				var needsincrease=0
+				if(giveup){
+					return false
+				}
+				for(i=0;i<reds.length;i++){
+					for(j=0;j<reds.length;j++){
+						if(i==j){
+							//continue
+						}
+						var collision=0
+						var jerk=1
+						if(reds[i][0].includes(reds[j][0])&&i!=j){
+							merge=reds[i][0]
+							collision=2
+							var ri=rewrite(merge.replace(reds[i][0],reds[i][1]))
+							var rj=rewrite(merge.replace(reds[j][0],reds[j][1]))
+							jerk++
+							if(ri==rj){
+								collision=0
+								jerk--
+							}
+						}
+						if(!collision&&!prio){
+							for(var k=1;k<reds[j][0].length;k++){
+								if(reds[i][0].endsWith(reds[j][0].slice(0,k))){
+									merge=reds[i][0]+reds[j][0].slice(k)
+									collision=1
+									var ri=rewrite(merge.replace(reds[i][0],reds[i][1]))
+									var rj=rewrite(merge.replace(reds[j][0],reds[j][1]))
+									jerk++
+									if(ri==rj){
+										collision=0
+										jerk--
+									}
+								}
+							}
+						}
+						if(jerk>1){
+							//console.log("here comes")
+						}
+						if(!collision){
+							continue
+						}
+						var ri=rewrite(merge.replace(reds[i][0],reds[i][1]))
+						var rj=rewrite(merge.replace(reds[j][0],reds[j][1]))
+						if(ri==rj){
+							continue
+						}
+						if(merge.length>maxlen){
+							//return false
+							needsincrease=1
+							continue
+						}
+						console.log(reds[i][0],reds[j][0],merge)
+						//only works with groups
+						if(speedhack){
+							/*while(ri[0]==rj[0]){
+								ri=ri.slice(1)
+								rj=rj.slice(1)
+							}
+							while(ri[ri.length-1]==rj[rj.length-1]){
+								ri=ri.slice(0,-1)
+								rj=rj.slice(0,-1)
+							}*/
+							var prerel=eta(ri,rj)
+							ri=prerel[0]
+							rj=prerel[1]
+						}
+						var rij
+						if(strlt(ri,rj)){
+							rij=[rj,ri]
+						}else{
+							rij=[ri,rj]
+						}
+						if(collision==2){
+							reds[i]=rij
+						}else{
+							reds.push(rij)
+						}
+						console.log(reds.join(";"))
+						c={}
+						var l=Math.min(i,j)
+						l=reds.length
+						for(var k=0;k<l;k++){
+							//not required
+							var red=reds[k]
+							if(rewrite1(red[1])!=red[1]){
+								red[1]=rewrite(red[1])
+							}
+							//if(rewrite1(reds[k][0],[k],l)!=reds[k][0]){
+							/*if(rewrite(reds[k][0],[k],l)==reds[k][1]){
+								console.log("yes",k,reds[k])
+								reds.splice(k,1)
+								c={}
+								l--
+								i--
+								j--
+								k--
+							}*/
+							var pull=0
+							if(rewrite1(red[0],[k])!=red[0]){
+								red[0]=rewrite(red[0],[k])
+								pull=1
+							}
+							var push=1
+							if(red[0]==red[1]){
+								console.log("yes",k,red)
+								pull=0
+								reds.splice(k,1)
+								l--
+								k--
+								c={}
+								continue
+							}else if(strlt(red[0],red[1])){
+								var t=red[0]
+								red[0]=red[1]
+								red[1]=t
+							}
+						}
+						return true
+					}
+				}
+				if(needsincrease&&maxlen<=maxmaxlen){
+					maxlen++
+					console.log("len to",maxlen)
+					return maxlen<=maxmaxlen
+				}
+				return false
+			}
+			var checked={}
+			function faststep(prio){
+				var needsincrease=0
+				if(giveup){
+					return false
+				}
+				for(var i=0;i<reds.length;i++){
+					for(var j=0;j<reds.length;j++){
+						if(checked[i+","+j]){
+							continue
+						}
+						if(reds[i][0]=="`"){
+							break
+						}
+						if(reds[j][0]=="`"){
+							continue
+						}
+						var merge
+						var collision=0
+						var jerk=0
+						var ri
+						var rj
+						if(reds[i][0].includes(reds[j][0])/*&&i!=j*/){
+							merge=reds[i][0]
+							collision=2
+							ri=rewrite(merge.replace(reds[i][0],reds[i][1]))
+							rj=rewrite(merge.replace(reds[j][0],reds[j][1]))
+							jerk++
+							if(ri==rj){
+								collision=0
+								jerk--
+							}
+						}
+						if(!collision&&!prio){
+							for(var k=1;k<reds[j][0].length;k++){
+								if(reds[i][0].endsWith(reds[j][0].slice(0,k))){
+									merge=reds[i][0]+reds[j][0].slice(k)
+									collision=1
+									ri=rewrite(reds[i][1]+reds[j][0].slice(k))
+									rj=rewrite((merge+"`").replace(reds[j][0]+"`",reds[j][1]))
+									jerk++
+									if(ri==rj){
+										collision=0
+										jerk--
+									}
+								}
+							}
+						}
+						if(jerk>1){
+							//console.log("here comes")
+						}
+						if(!collision){
+							checked[i+","+j]=1
+							continue
+						}
+						if(merge.length>maxlen){
+							//return false
+							needsincrease=1
+							continue
+						}
+						console.log(reds[i][0],reds[j][0],merge)
+						//only works with groups
+						if(speedhack){
+							/*while(ri[0]==rj[0]){
+								ri=ri.slice(1)
+								rj=rj.slice(1)
+							}
+							while(ri[ri.length-1]==rj[rj.length-1]){
+								ri=ri.slice(0,-1)
+								rj=rj.slice(0,-1)
+							}*/
+							var prerel=eta(ri,rj)
+							ri=prerel[0]
+							rj=prerel[1]
+						}
+						var rij
+						if(strlt(ri,rj)){
+							rij=[rj,ri]
+						}else{
+							rij=[ri,rj]
+						}
+						if(collision==2){
+							reds[i]=rij
+							for(var k=0;k<reds.length;k++){
+								checked[i+","+k]=checked[k+","+i]=0
+							}
+						}else{
+							reds.push(rij)
+							var t=reds.length-1
+							for(var k=0;k<reds.length;k++){
+								checked[t+","+k]=checked[k+","+t]=0
+							}
+						}
+						console.log(reds.join(";"))
+						c={}
+						console.log(jerk)
+						if(jerk==1){
+							console.log("locked",i,j)
+							checked[i+","+j]=1
+						}
+						var l=Math.min(i,j)
+						l=reds.length
+						for(var k=0;k<l;k++){
+							//not required
+							var red=reds[k]
+							if(red[0]=="`"){
+								continue
+							}
+							var oldred=[red[0],red[1]]
+							/*if(rewrite1(red[1])!=red[1]){
+								red[1]=rewrite(red[1])
+							}*/
+							//if(rewrite1(reds[k][0],[k],l)!=reds[k][0]){
+							/*if(rewrite(reds[k][0],[k],l)==reds[k][1]){
+								console.log("yes",k,reds[k])
+								reds.splice(k,1)
+								c={}
+								l--
+								i--
+								j--
+								k--
+							}*/
+							var pull=0
+							if(rewrite1(red[0],[k])!=red[0]){
+								red[0]=rewrite(red[0],[k])
+								pull=1
+								for(var l=0;l<reds.length;l++){
+									checked[k+","+l]=checked[l+","+k]=0
+								}
+							}
+							var push=1
+							if(red[0]==red[1]){
+								console.log("yes",k,oldred)
+								pull=0
+								//reds.splice(k,1)
+								reds[k]=["`",""]
+								l--
+								k--
+								c={}
+								continue
+							}else if(strlt(red[0],red[1])){
+								var t=red[0]
+								red[0]=red[1]
+								red[1]=t
+								for(var l=0;l<reds.length;l++){
+									checked[k+","+l]=checked[l+","+k]=0
+								}
+							}
+						}
+						return true
+					}
+				}
+				if(needsincrease&&maxlen<=maxmaxlen){
+					maxlen++
+					console.log("len to",maxlen)
+					return maxlen<=maxmaxlen
+				}
+				return false
+			}
+			step=faststep
+			window.step=step
+			/*var double=/((......+)\2)/ //5 overhead 1 copy
+			var triple=/((.....?)\2\2)/ //7 overhead 2 copies
+			var quad=/((...)\2\2\2\2?)/ //7 overhead 3 copies
+			var hex=/((..)\2\2\2\2\2{1,9})/ //9 overhead 5 copies
+			var many=/((.)\2\2\2\2\2\2\2\2\2\2\2\2\2\2+)/ //13 overhead 14 copies
+			var rels=[]
+			for(var i=2;i<131;i++){
+				var seq=rewrite(naivenum(i))
+				var dexec=double.exec(seq)
+				var texec=triple.exec(seq)
+				var qexec=quad.exec(seq)
+				var hexec=hex.exec(seq)
+				var mexec=many.exec(seq)
+				var exec=dexec||texec||qexec||hexec||mexec
+				if(exec){
+					var push=[exec[1],0]
+					var factor=naivenum(exec[1].length/exec[2].length)
+					console.log(i,exec,factor)
+					push[1]="("+exec[2]+")"+factor+"^"
+					rels.push(push)
+				}
+			}
+			console.log(rels)
+			for(var i=0;i<rels.length;i++){
+				if(strlt(rels[i][0],rels[i][1])){
+					reds.push([rels[i][1],rels[i][0]])
+				}else{
+					reds.push(rels[i])
+				}
+			}
+
+			//trees
+			console.log("cycle start")
+			console.log(reds.join(";"))
+			//while(step()){console.log(reds.join(";"))}
+			console.log("cycle done")*/
+			function rebuild(){
+				console.log(reds.join(";"))
+				var guh=0
+				while(step()){guh++}
+				console.log("main done")
+				console.log(guh)
+			}
+			function addred(rel){
+				if(strlt(rel[0],rel[1])){
+					reds.push([rel[1],rel[0]])
+				}else{
+					reds.push(rel)
+				}
+			}
+			rebuild()
+			var l=reds.length
+			for(var k=0;k<reds.length;k++){
+				//not required
+				if(rewrite1(reds[k][1])!=reds[k][1]){
+					reds[k][1]=rewrite(reds[k][1])
+				}
+				if(rewrite1(reds[k][0],[k],l)!=reds[k][0]||reds[k][0]=="`"){
+					console.log("yes",k,reds[k])
+					reds.splice(k,1)
+					c={}
+					l--
+					k--
+				}
+			}
+			var spleef=""
+			for(var i=0;i<reds.length;i++){
+				spleef+=reds[i][0]+" "+reds[i][1]+"<br>"
+			}
+			outbox.innerHTML=spleef
+			stringbox.value=JSON.stringify(reds)
+		}
+		function yeux(){
+			var lines=box.value.split("\n")
+			var rels=[]
+			for(var i=0;i<lines.length;i++){
+				rels.push(lines[i].split(" "))
+			}
+			blammo(rels)
+		}
+		var orderlencap=40
+		window.anchors=[""]
+		window.forcegens=0
+		function order(){
+			var mapper={}
+			var stack=[]
+			for(var i=0;i<anchors.length;i++){
+				stack.push(anchors[i])
+			}
+			var gens=""
+			var ret=1
+			var growth=[]
+			for(var i=0;i<reds.length;i++){
+				for(var j=0;j<2;j++){
+					for(var k=0;k<reds[i][j].length;k++){
+						if(!gens.includes(reds[i][j][k])){
+							gens+=reds[i][j][k]
+						}
+					}
+				}
+			}
+			if(forcegens){
+				gens=forcegens
+			}
+			function rewrite1(str,excl,limit){
+				if(!excl){
+					excl=[]
+				}
+				if(limit===undefined){
+					limit=reds.length
+				}
+				for(var i=0;i<limit;i++){
+					if(excl.includes(i)){
+						continue
+					}
+					if(str.includes(reds[i][0])){
+						return str.replace(reds[i][0],reds[i][1])
+						c=1
+					}
+				}
+				return str
+			}
+			var infinite=0
+			while(stack.length){
+				var s=stack.pop()
+				for(var i=0;i<gens.length;i++){
+					var p=s+gens[i]
+					if(mapper[p]){
+						continue
+					}
+					if(rewrite1(p)!=p){
+						mapper[p]=1
+						continue
+					}
+					ret++
+					console.log(p)
+					//note to self: find general inverse
+					var central=1
+					for(var j=0;j<gens.length;j++){
+						if(rewrite(gens[j]+p+gens[j]+p)!=""){
+							central=0
+							break
+						}
+					}
+					if(central){
+						console.log("^ central")
+					}
+					while(growth.length<=p.length){
+						growth.push(0)
+					}
+					growth[p.length]++
+					if(p.length<orderlencap){
+						stack.push(p)
+					}else if(!infinite){
+						console.log(p)
+						infinite=1
+					}
+				}
+			}
+			if(infinite){
+				var end=growth.length
+				orderbox.textContent=(growth[end-1]/growth[end-2]).toFixed(4)+" inf"
+			}else{
+				orderbox.textContent=ret
+			}
+		}
+		function graph(){
+			var gens=""
+			for(var i=0;i<reds.length;i++){
+				for(var j=0;j<2;j++){
+					for(var k=0;k<reds[i][j].length;k++){
+						if(!gens.includes(reds[i][j][k])){
+							gens+=reds[i][j][k]
+						}
+					}
+				}
+			}
+			if(forcegens){
+				gens=forcegens
+			}
+			var banned=[]
+			var suffixes=[""]
+			for(var i=0;i<reds.length;i++){
+				banned.push(reds[i][0])
+			}
+			while(banned.length){
+				var i=banned.pop()
+				if(!suffixes.includes(i)){
+					suffixes.push(i)
+					banned.push(i.slice(0,-1))
+				}
+			}
+			console.log(suffixes)
+			var table={}
+			var results=[0]
+			var count=0
+			for(var i=0;i<anchors.length;i++){
+				table[anchors[i]]=1
+				results[0]++
+				count++
+			}
+			for(var i=0;i<orderlencap;i++){
+				var newtable={}
+				var newcount=0
+				for(var j=0;j<Object.keys(table).length;j++){
+					var x=Object.keys(table)[j]
+					for(var k=0;k<gens.length;k++){
+						var l=x+gens[k]
+						while(!suffixes.includes(l)){
+							l=l.slice(1)
+						}
+						if(rewrite1(l)!=l){
+							continue
+						}
+						if(!newtable[l]){
+							newtable[l]=table[x]
+						}else{
+							newtable[l]+=table[x]
+						}
+						newcount+=table[x]
+						count+=table[x]
+					}
+				}
+				results.push(newcount)
+				table=newtable
+			}
+			if(results[results.length-1]){
+				orderbox.textContent=(results[results.length-1]/results[results.length-2]).toFixed(8)+" exp"
+			}else{
+				orderbox.textContent=count
+				if(anchors.length>1||anchors[0]!=""||forcegens){
+					return
+				}
+				var maxlentable={"":""}
+				var stack=[""]
+				var best=""
+				while(stack.length){
+					var x=stack.pop()
+					for(var i=0;i<gens.length;i++){
+						var y=x+gens[i]
+						while(!suffixes.includes(y)){
+							y=y.slice(1)
+						}
+						if(rewrite1(y)!=y){
+							continue
+						}
+						maxlentable[y]=maxlentable[x]+gens[i]
+						if(maxlentable[y].length>best.length){
+							best=maxlentable[y]
+						}
+						stack.push(y)
+					}
+				}
+				console.log(maxlentable)
+				console.log(best)
+			}
+		}
+		function serialize(){
+			return //might finish might not
+			var mapper={}
+			var stack=[""]
+			var gens=""
+			var ret=1
+			var growth=[]
+			for(var i=0;i<reds.length;i++){
+				for(var j=0;j<2;j++){
+					for(var k=0;k<reds[i][j].length;k++){
+						if(!gens.includes(reds[i][j][k])){
+							gens+=reds[i][j][k]
+						}
+					}
+				}
+			}
+			function rewrite1(str,excl,limit){
+				if(!excl){
+					excl=[]
+				}
+				if(limit===undefined){
+					limit=reds.length
+				}
+				for(var i=0;i<limit;i++){
+					if(excl.includes(i)){
+						continue
+					}
+					if(str.includes(reds[i][0])){
+						return str.replace(reds[i][0],reds[i][1])
+						c=1
+					}
+				}
+				return str
+			}
+			var infinite=0
+			var elems=[]
+			while(stack.length){
+				var s=stack.pop()
+				for(var i=0;i<gens.length;i++){
+					var p=s+gens[i]
+					if(mapper[p]){
+						continue
+					}
+					if(rewrite1(p)!=p){
+						mapper[p]=1
+						continue
+					}
+					ret++
+					elems.push(p)
+					while(growth.length<=p.length){
+						growth.push(0)
+					}
+					growth[p.length]++
+					if(true){
+						stack.push(p)
+					}else if(!infinite){
+						console.log(p)
+						infinite=1
+					}
+				}
+			}
+			var newgens=gens
+			var newelems=[]
+			var reprs={}
+			for(var i=0;i<elems.length;i++){
+				reprs[elems][i]=elems[i]
+			}
+			while(ret>1){
+
+			}
+		}
+		function stumble(){
+			var old=interactive.value
+			interactive.value+="abcd"[Math.floor(Math.random()*4)]
+			interactive.value=rewrite(interactive.value)
+			if(interactive.value.length<old.length-1){
+				console.log(interactive.value,old)
+			}else{
+				requestAnimationFrame(stumble)
+			}
+		}
+		function checkpair(a,b,c){
+			return [rewrite(rewrite(a+b)+c),rewrite(a+rewrite(b+c))]
+		}
+	</script>
+</head>
+<body style="font-family: monospace;">
+<textarea id="box"></textarea>
+<button onclick="yeux()">PUSH ON BUTT</button>
+<div id="outbox"></div>
+<input id="interactive" oninput="interactive.value=rewrite(interactive.value)" style="width:400px">
+<button onclick="order()">Order it</button>
+<button onclick="graph()">Order it but better</button>
+<text id="orderbox"></text>
+<input id="stringbox">
+</body>
+</html>
