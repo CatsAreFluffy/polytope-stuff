@@ -10,19 +10,67 @@
 			if(danger){
 				return a<b
 			}
-			//return a<b //Apparently this actually works. Who knew //No it doesn't lol
+			var scores=scorebox.value.split("\n")
+			for(var i=0;i<scores.length;i++){
+				var scorea=""
+				var scoreb=""
+				for(var j=0;j<a.length;j++){
+					if(scores[i].includes(a[j])){
+						scorea+=a[j]
+					}
+				}
+				for(var j=0;j<b.length;j++){
+					if(scores[i].includes(b[j])){
+						scoreb+=b[j]
+					}
+				}
+				if(scorea.length>scoreb.length){
+					return false
+				}
+				if(scorea.length<scoreb.length){
+					return true
+				}
+				if(sortbox.value){
+					for(var j=0;j<scorea.length&&j<scoreb.length;j++){
+						if(sortbox.value.indexOf(scorea[j])>sortbox.value.indexOf(scoreb[j])){
+							return false
+						}
+						if(sortbox.value.indexOf(scorea[j])<sortbox.value.indexOf(scoreb[j])){
+							return true
+						}
+					}
+				}else{
+					if(scorea>scoreb){
+						return false
+					}
+					if(scorea<scoreb){
+						return true
+					}
+				}
+			}
 			if(a.length>b.length){
 				return false
 			}
 			if(a.length<b.length){
 				return true
 			}
-			for(var i=0;i<a.length&&i<b.length;i++){
-				if(a[i]>b[i]){
-					return false
+			if(sortbox.value){
+				for(var i=0;i<a.length&&i<b.length;i++){
+					if(sortbox.value.indexOf(a[i])>sortbox.value.indexOf(b[i])){
+						return false
+					}
+					if(sortbox.value.indexOf(a[i])<sortbox.value.indexOf(b[i])){
+						return true
+					}
 				}
-				if(a[i]<b[i]){
-					return true
+			}else{
+				for(var i=0;i<a.length&&i<b.length;i++){
+					if(a[i]>b[i]){
+						return false
+					}
+					if(a[i]<b[i]){
+						return true
+					}
 				}
 			}
 			return true
@@ -31,15 +79,34 @@
 			return [ri,rj]
 		}
 		function etagroup(ri,rj){
-			while(ri[0]==rj[0]){
+			while(ri.length&&rj.length&&ri[0]==rj[0]){
 				ri=ri.slice(1)
 				rj=rj.slice(1)
 			}
-			while(ri[ri.length-1]==rj[rj.length-1]){
+			while(ri.length&&rj.length&&ri[ri.length-1]==rj[rj.length-1]){
 				ri=ri.slice(0,-1)
 				rj=rj.slice(0,-1)
 			}
 			return [ri,rj]
+		}
+		function etagroupx(ri,rj){
+			[ri,rj]=etagroup(ri,rj)
+			if(strlt(ri,rj)){
+				[ri,rj]=[rj,ri]
+			}
+			while(1){
+				var ri2=ri.slice(0,-1)
+				if(!"xyzwvXYZWV".includes(ri[ri.length-1])){
+					return [ri,rewrite(rj)]
+				}
+				var invlast=ri[ri.length-1]>"Z"?ri[ri.length-1].toUpperCase():ri[ri.length-1].toLowerCase()
+				var rj2=rj+invlast
+				if(!strlt(rj2,ri2)){
+					return [ri,rewrite(rj)]
+				}
+				ri=ri2
+				rj=rj2
+			}
 		}
 		function etaunderload(ri,rj){
 			if(ri[0]==rj[0]&&"AB".includes(ri[0])){
@@ -50,8 +117,8 @@
 			}
 			return [ri,rj]
 		}
-		var eta=etaid
-		function blammo(rels){
+		var eta=etagroup
+		function blammo(rels,real){
 			reds=[]
 			c={}
 			for(var i=0;i<rels.length;i++){
@@ -103,7 +170,7 @@
 			window.speedhack=1
 			window.maxmaxlen=100
 			window.maxlen=2
-			window.giveup=0
+			window.giveup=real?real:0
 			function step(prio){
 				var merge
 				var ci
@@ -325,6 +392,10 @@
 							}
 						}else{
 							reds.push(rij)
+							if(reds.length>2895){
+								// 2^22 key limit
+								giveup=1
+							}
 							var t=reds.length-1
 							for(var k=0;k<reds.length;k++){
 								checked[t+","+k]=checked[k+","+t]=0
@@ -474,9 +545,25 @@
 			var lines=box.value.split("\n")
 			var rels=[]
 			for(var i=0;i<lines.length;i++){
-				rels.push(lines[i].split(" "))
+				var rel=lines[i].split(" ")
+				while(rel.length<2){
+					rel.push("")
+				}
+				rels.push(rel)
 			}
 			blammo(rels)
+		}
+		function peux(){
+			var lines=box.value.split("\n")
+			var rels=[]
+			for(var i=0;i<lines.length;i++){
+				var rel=lines[i].split(" ")
+				while(rel.length<2){
+					rel.push("")
+				}
+				rels.push(rel)
+			}
+			blammo(rels,1)
 		}
 		var orderlencap=40
 		window.anchors=[""]
@@ -489,6 +576,7 @@
 			}
 			var gens=""
 			var ret=1
+			var center=1
 			var growth=[]
 			for(var i=0;i<reds.length;i++){
 				for(var j=0;j<2;j++){
@@ -533,17 +621,18 @@
 						continue
 					}
 					ret++
-					console.log(p)
 					//note to self: find general inverse
 					var central=1
 					for(var j=0;j<gens.length;j++){
-						if(rewrite(gens[j]+p+gens[j]+p)!=""){
+						if(rewrite(gens[j]+p)!=rewrite(p+gens[j])){
 							central=0
 							break
 						}
 					}
 					if(central){
+						console.log(p)
 						console.log("^ central")
+						center++
 					}
 					while(growth.length<=p.length){
 						growth.push(0)
@@ -563,6 +652,7 @@
 			}else{
 				orderbox.textContent=ret
 			}
+			console.log(center)
 		}
 		function graph(){
 			var gens=""
@@ -739,16 +829,40 @@
 		function checkpair(a,b,c){
 			return [rewrite(rewrite(a+b)+c),rewrite(a+rewrite(b+c))]
 		}
+		function center(){
+			var c=centerbox.value
+			var v=box.value
+			for(var i=0;i<c.length;i++){
+				var seen=" \n"+c
+				for(var j=0;j<v.length;j++){
+					if(seen.includes(v[j])){
+						continue
+					}
+					box.value+="\n"+c[i]+v[j]+" "+v[j]+c[i]
+					seen+=v[j]
+				}
+				for(var j=i+1;j<c.length;j++){
+					box.value+="\n"+c[i]+c[j]+" "+c[j]+c[i]
+				}
+			}
+		}
 	</script>
 </head>
 <body style="font-family: monospace;">
 <textarea id="box"></textarea>
 <button onclick="yeux()">PUSH ON BUTT</button>
+<button onclick="peux()">don't</button>
 <div id="outbox"></div>
-<input id="interactive" oninput="interactive.value=rewrite(interactive.value)" style="width:400px">
+<input id="interactive" oninput="interactive.value=rewrite(interactive.value)" style="width:700px;font-family:monospace">
 <button onclick="order()">Order it</button>
 <button onclick="graph()">Order it but better</button>
 <text id="orderbox"></text>
 <input id="stringbox">
+<br>
+<textarea id="scorebox"></textarea>
+<input id="sortbox">
+<br>
+<textarea id="centerbox"></textarea>
+<button onclick="center()">Add center</button>
 </body>
 </html>
